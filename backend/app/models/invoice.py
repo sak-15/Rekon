@@ -58,3 +58,4 @@ class Invoice(Base, TimestampMixin):
         UniqueConstraint("org_id", "invoice_no", name="uq_org_invoice_no"),
         Index("ix_invoices_org_customer_amount", "org_id", "customer_id", "amount"),
     )
+

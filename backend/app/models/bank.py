@@ -36,3 +36,4 @@ class BankCredit(Base, TimestampMixin):
     __table_args__ = (
         Index("ix_bank_credits_org_credit_date", "org_id", "credit_amount", "transaction_date"),
     )
+

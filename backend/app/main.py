@@ -10,6 +10,8 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
+from app.api import api_router
+
 # Set up CORS middleware for frontend communication
 app.add_middleware(
     CORSMiddleware,
@@ -46,4 +48,8 @@ async def health_check():
         "environment": settings.ENVIRONMENT,
         "version": "0.1.0",
     }
+
+
+# Mount API V1 router
+app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 

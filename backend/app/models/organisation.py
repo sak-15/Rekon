@@ -47,3 +47,4 @@ class User(Base, TimestampMixin):
 
     # Relationship
     organisation = relationship("Organisation", back_populates="users")
+

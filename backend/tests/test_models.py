@@ -224,3 +224,4 @@ def test_bank_credit_recording(db_session):
     assert fetched is not None
     assert fetched.credit_amount == Decimal("48820.00")
     assert fetched.reconciliation_status == ReconciliationStatusEnum.UNMATCHED
+

@@ -78,3 +78,4 @@ class GatewayTransaction(Base, TimestampMixin):
         UniqueConstraint("org_id", "txn_id", name="uq_org_txn_id"),
         Index("ix_gateway_txns_org_amount_date", "org_id", "amount", "captured_at"),
     )
+

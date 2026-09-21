@@ -169,22 +169,49 @@ npm run dev
 
 ---
 
-## 6. Verification & Testing
+---
 
-To run the backend test suite:
+## 6. Authentication & Tenancy API
 
+Rekon uses stateless JWT authentication with tenant scoping. When a user registers or logs in, the returned access token embeds the tenant's `org_id`. All downstream financial queries use this ID to enforce strict data isolation.
+
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | Register new tenant organisation and admin user | No |
+| `POST` | `/api/auth/login` | Authenticate with email & password, returns JWT | No |
+| `GET` | `/api/auth/me` | Fetch authenticated caller profile & organisation | Yes (Bearer JWT) |
+
+### Example Registration:
 ```bash
-cd backend
-pytest tests/ -v
+curl -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "org_name": "ChargeFlow Inc",
+    "org_slug": "chargeflow",
+    "email": "cfo@chargeflow.io",
+    "password": "StrongPassword123!",
+    "full_name": "Rohan Sharma",
+    "currency": "INR"
+  }'
 ```
 
 ---
 
-## 7. Development Roadmap
+## 7. Verification & Testing
+
+To run the backend test suite (12 passing tests):
+
+```bash
+PYTHONPATH=backend backend/.venv/bin/pytest backend/tests/ -v
+```
+
+---
+
+## 8. Development Roadmap
 
 - [x] **Phase 1: Step 1.1** — Project Scaffold (Docker Compose, FastAPI, React, Config)
-- [ ] **Phase 1: Step 1.2** — Database Schema v1 & Alembic Migrations
-- [ ] **Phase 1: Step 1.3** — Multi-Tenant Auth API (JWT, Register, Login)
+- [x] **Phase 1: Step 1.2** — Database Schema v1 & Alembic Migrations
+- [x] **Phase 1: Step 1.3** — Multi-Tenant Auth API (JWT, Register, Login)
 - [ ] **Phase 1: Step 1.4** — CSV Ingestion & Normalization (Razorpay, Stripe, Chargebee)
 - [ ] **Phase 1: Step 1.5** — Ingestion UI & Tabular Record Viewer
 - [ ] **Phase 2** — Three-Layer Core Reconciliation Engine
@@ -197,6 +224,6 @@ pytest tests/ -v
 
 ---
 
-## 8. License
+## 9. License
 
 Private & Proprietary • Rekon

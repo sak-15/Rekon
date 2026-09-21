@@ -72,3 +72,4 @@ class SettlementLine(Base, TimestampMixin):
 
     # Relationship
     batch = relationship("SettlementBatch", back_populates="lines")
+
