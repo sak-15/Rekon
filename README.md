@@ -175,13 +175,14 @@ npm run dev
 
 Rekon uses stateless JWT authentication with tenant scoping. When a user registers or logs in, the returned access token embeds the tenant's `org_id`. All downstream financial queries use this ID to enforce strict data isolation.
 
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `POST` | `/api/auth/register` | Register new tenant organisation and admin user | No |
-| `POST` | `/api/auth/login` | Authenticate with email & password, returns JWT | No |
-| `GET` | `/api/auth/me` | Fetch authenticated caller profile & organisation | Yes (Bearer JWT) |
+| Method | Endpoint             | Description                                       | Auth Required    |
+| ------ | -------------------- | ------------------------------------------------- | ---------------- |
+| `POST` | `/api/auth/register` | Register new tenant organisation and admin user   | No               |
+| `POST` | `/api/auth/login`    | Authenticate with email & password, returns JWT   | No               |
+| `GET`  | `/api/auth/me`       | Fetch authenticated caller profile & organisation | Yes (Bearer JWT) |
 
 ### Example Registration:
+
 ```bash
 curl -X POST http://localhost:8000/api/auth/register \
   -H "Content-Type: application/json" \
@@ -197,9 +198,31 @@ curl -X POST http://localhost:8000/api/auth/register \
 
 ---
 
-## 7. Verification & Testing
+## 7. CSV Ingestion & Normalization API
 
-To run the backend test suite (12 passing tests):
+Rekon provides dedicated multipart endpoints to ingest financial data across the 3 layers. All endpoints perform automatic column mapping, currency/date cleaning, deduplication against previously ingested records, and row-level error audit logging in `upload_jobs`.
+
+| Method | Endpoint | Supported Formats | Auth Required |
+|---|---|---|---|
+| `POST` | `/api/uploads/invoices` | Chargebee, Zoho Subscriptions, generic SaaS invoices | Yes (Bearer JWT) |
+| `POST` | `/api/uploads/gateway-txns` | Razorpay, Stripe (auto-detects gateway) | Yes (Bearer JWT) |
+| `POST` | `/api/uploads/settlements` | Gateway settlement files (groups into batches & lines) | Yes (Bearer JWT) |
+| `POST` | `/api/uploads/bank-statements`| HDFC, ICICI, Axis, and generic bank statements | Yes (Bearer JWT) |
+| `GET`  | `/api/uploads` | List previous upload jobs for the tenant | Yes (Bearer JWT) |
+| `GET`  | `/api/uploads/{upload_id}` | Fetch upload job audit status & row error details | Yes (Bearer JWT) |
+
+### Example Ingesting Invoices:
+```bash
+curl -X POST http://localhost:8000/api/uploads/invoices \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -F "file=@invoices.csv"
+```
+
+---
+
+## 8. Verification & Testing
+
+To run the complete automated test suite (25 passing tests):
 
 ```bash
 PYTHONPATH=backend backend/.venv/bin/pytest backend/tests/ -v
@@ -207,12 +230,12 @@ PYTHONPATH=backend backend/.venv/bin/pytest backend/tests/ -v
 
 ---
 
-## 8. Development Roadmap
+## 9. Development Roadmap
 
 - [x] **Phase 1: Step 1.1** — Project Scaffold (Docker Compose, FastAPI, React, Config)
 - [x] **Phase 1: Step 1.2** — Database Schema v1 & Alembic Migrations
 - [x] **Phase 1: Step 1.3** — Multi-Tenant Auth API (JWT, Register, Login)
-- [ ] **Phase 1: Step 1.4** — CSV Ingestion & Normalization (Razorpay, Stripe, Chargebee)
+- [x] **Phase 1: Step 1.4** — CSV Ingestion & Normalization (Razorpay, Stripe, Chargebee)
 - [ ] **Phase 1: Step 1.5** — Ingestion UI & Tabular Record Viewer
 - [ ] **Phase 2** — Three-Layer Core Reconciliation Engine
 - [ ] **Phase 3** — MDR & 18% GST Fee Audit Engine
@@ -224,6 +247,6 @@ PYTHONPATH=backend backend/.venv/bin/pytest backend/tests/ -v
 
 ---
 
-## 9. License
+## 10. License
 
 Private & Proprietary • Rekon

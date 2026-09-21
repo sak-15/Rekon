@@ -149,3 +149,4 @@ def get_me(
         user=UserResponse.model_validate(current_user),
         organisation=OrganisationResponse.model_validate(current_user.organisation),
     )
+

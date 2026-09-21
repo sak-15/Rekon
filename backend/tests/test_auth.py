@@ -1,51 +1,7 @@
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
-
-from app.main import app
-from app.core.database import Base, get_db
 from app.core.security import decode_access_token
 
 
-# Set up isolated in-memory SQLite database for test suite
-TEST_SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-
-engine = create_engine(
-    TEST_SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-@pytest.fixture(autouse=True)
-def setup_test_db():
-    """
-    Creates fresh schema before each test and drops all tables afterwards.
-    """
-    Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
-
-
-def override_get_db():
-    """
-    FastAPI dependency override to route DB operations to the in-memory test database.
-    """
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
-
-
-def test_register_new_organisation_and_admin():
+def test_register_new_organisation_and_admin(client):
     """
     Verify successful tenant organisation and admin registration.
     """
@@ -76,7 +32,7 @@ def test_register_new_organisation_and_admin():
     assert claims["email"] == "cfo@chargeflow.io"
 
 
-def test_register_duplicate_slug_or_email_rejected():
+def test_register_duplicate_slug_or_email_rejected(client):
     """
     Verify collision rejection when duplicate organisation slug or user email is submitted.
     """
@@ -107,7 +63,7 @@ def test_register_duplicate_slug_or_email_rejected():
     assert "already exists" in res_dup_email.json()["detail"]
 
 
-def test_login_flow():
+def test_login_flow(client):
     """
     Verify user login with valid credentials, invalid password, and nonexistent account.
     """
@@ -144,7 +100,7 @@ def test_login_flow():
     assert unknown_user_res.status_code == 401
 
 
-def test_get_me_protected_route():
+def test_get_me_protected_route(client):
     """
     Verify /api/auth/me returns caller's profile and organisation when provided a valid Bearer token.
     """
@@ -175,7 +131,7 @@ def test_get_me_protected_route():
     assert unauth_res.status_code == 401
 
 
-def test_multi_tenant_token_isolation():
+def test_multi_tenant_token_isolation(client):
     """
     Verify that two different organisations receive distinct JWTs with distinct org_ids.
     """

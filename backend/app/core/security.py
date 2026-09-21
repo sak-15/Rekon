@@ -118,3 +118,4 @@ def require_role(allowed_roles: List[UserRole]):
         return current_user
 
     return role_checker
+
