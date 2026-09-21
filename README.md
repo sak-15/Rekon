@@ -202,16 +202,17 @@ curl -X POST http://localhost:8000/api/auth/register \
 
 Rekon provides dedicated multipart endpoints to ingest financial data across the 3 layers. All endpoints perform automatic column mapping, currency/date cleaning, deduplication against previously ingested records, and row-level error audit logging in `upload_jobs`.
 
-| Method | Endpoint | Supported Formats | Auth Required |
-|---|---|---|---|
-| `POST` | `/api/uploads/invoices` | Chargebee, Zoho Subscriptions, generic SaaS invoices | Yes (Bearer JWT) |
-| `POST` | `/api/uploads/gateway-txns` | Razorpay, Stripe (auto-detects gateway) | Yes (Bearer JWT) |
-| `POST` | `/api/uploads/settlements` | Gateway settlement files (groups into batches & lines) | Yes (Bearer JWT) |
-| `POST` | `/api/uploads/bank-statements`| HDFC, ICICI, Axis, and generic bank statements | Yes (Bearer JWT) |
-| `GET`  | `/api/uploads` | List previous upload jobs for the tenant | Yes (Bearer JWT) |
-| `GET`  | `/api/uploads/{upload_id}` | Fetch upload job audit status & row error details | Yes (Bearer JWT) |
+| Method | Endpoint                       | Supported Formats                                      | Auth Required    |
+| ------ | ------------------------------ | ------------------------------------------------------ | ---------------- |
+| `POST` | `/api/uploads/invoices`        | Chargebee, Zoho Subscriptions, generic SaaS invoices   | Yes (Bearer JWT) |
+| `POST` | `/api/uploads/gateway-txns`    | Razorpay, Stripe (auto-detects gateway)                | Yes (Bearer JWT) |
+| `POST` | `/api/uploads/settlements`     | Gateway settlement files (groups into batches & lines) | Yes (Bearer JWT) |
+| `POST` | `/api/uploads/bank-statements` | HDFC, ICICI, Axis, and generic bank statements         | Yes (Bearer JWT) |
+| `GET`  | `/api/uploads`                 | List previous upload jobs for the tenant               | Yes (Bearer JWT) |
+| `GET`  | `/api/uploads/{upload_id}`     | Fetch upload job audit status & row error details      | Yes (Bearer JWT) |
 
 ### Example Ingesting Invoices:
+
 ```bash
 curl -X POST http://localhost:8000/api/uploads/invoices \
   -H "Authorization: Bearer <your_jwt_token>" \
@@ -236,7 +237,7 @@ PYTHONPATH=backend backend/.venv/bin/pytest backend/tests/ -v
 - [x] **Phase 1: Step 1.2** — Database Schema v1 & Alembic Migrations
 - [x] **Phase 1: Step 1.3** — Multi-Tenant Auth API (JWT, Register, Login)
 - [x] **Phase 1: Step 1.4** — CSV Ingestion & Normalization (Razorpay, Stripe, Chargebee)
-- [ ] **Phase 1: Step 1.5** — Ingestion UI & Tabular Record Viewer
+- [x] **Phase 1: Step 1.5** — Ingestion UI & Tabular Record Viewer (Phase 1 Complete 🎉)
 - [ ] **Phase 2** — Three-Layer Core Reconciliation Engine
 - [ ] **Phase 3** — MDR & 18% GST Fee Audit Engine
 - [ ] **Phase 4** — Exception Classification & Resolution Queue
