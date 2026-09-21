@@ -1,0 +1,93 @@
+version: "3.8"
+
+services:
+  # ----------------------------------------------------------------------------
+  # Database Service: PostgreSQL 16
+  # Stores all multi-tenant SaaS data with ACID guarantees
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: rekon_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rekon_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rekon_secret_password}
+      POSTGRES_DB: ${POSTGRES_DB:-rekon_db}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-rekon_user} -d ${POSTGRES_DB:-rekon_db}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rekon_network
+
+  # ----------------------------------------------------------------------------
+  # Backend Service: FastAPI (Python 3.12)
+  # REST API, business logic, CSV parsing, matching engine
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rekon_backend
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DEBUG=${DEBUG:-True}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-rekon_user}:${POSTGRES_PASSWORD:-rekon_secret_password}@postgres:5432/${POSTGRES_DB:-rekon_db}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-rekon_default_dev_secret_key_32bytes}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - rekon_network
+
+  # ----------------------------------------------------------------------------
+  # Frontend Service: React 18 + Vite + Tailwind CSS
+  # Modern responsive user interface for finance teams
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rekon_frontend
+    restart: unless-stopped
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - rekon_network
+
+volumes:
+  postgres_data:
+    name: rekon_postgres_data
+
+networks:
+  rekon_network:
+    name: rekon_network
+    driver: bridge
