@@ -219,11 +219,79 @@ curl -X POST http://localhost:8000/api/uploads/invoices \
   -F "file=@invoices.csv"
 ```
 
+## 8. Three-Layer Reconciliation Engine API
+
+Rekon executes an atomic three-layer matching pipeline (Invoices ↔ Gateway Transactions ↔ Settlement Lines ↔ Bank Credits).
+
+| Method | Endpoint                          | Description                                                         | Auth Required    |
+| ------ | --------------------------------- | ------------------------------------------------------------------- | ---------------- |
+| `POST` | `/api/reconcile`                  | Trigger a new three-layer reconciliation run (with optional rules)  | Yes (Bearer JWT) |
+| `GET`  | `/api/reconcile`                  | List historical reconciliation runs and executive metrics           | Yes (Bearer JWT) |
+| `GET`  | `/api/reconcile/{run_id}`         | Fetch detailed run report, layer counts, and financial totals       | Yes (Bearer JWT) |
+| `GET`  | `/api/reconcile/{run_id}/matches` | Query itemized audit matches with filtering by `layer` and `status` | Yes (Bearer JWT) |
+
+### Example Triggering a Reconciliation Run:
+
+```bash
+curl -X POST http://localhost:8000/api/reconcile \
+  -H "Authorization: Bearer <your_jwt_token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rule_config": {
+      "amount_tolerance": "1.00",
+      "layer_1_date_window_days": 2,
+      "layer_3_bank_window_days": 4,
+      "enable_fuzzy_matching": true
+    }
+  }'
+```
+
 ---
 
-## 8. Verification & Testing
+## 9. MDR & 18% GST Fee Audit Engine API
 
-To run the complete automated test suite (25 passing tests):
+Rekon audits transaction fees and statutory 18% GST against personalized merchant rate cards and Indian regulatory benchmarks (UPI 0% MDR, RBI ₹20 debit cap).
+
+| Method   | Endpoint                           | Description                                                        | Auth Required    |
+| -------- | ---------------------------------- | ------------------------------------------------------------------ | ---------------- |
+| `GET`    | `/api/rate-cards`                  | List active contracted rate cards (auto-seeds benchmarks if empty) | Yes (Bearer JWT) |
+| `POST`   | `/api/rate-cards`                  | Create a custom rate card rule for specific payment rails          | Yes (Bearer JWT) |
+| `PUT`    | `/api/rate-cards/{id}`             | Update percentage MDR, flat fee, or regulatory fee caps            | Yes (Bearer JWT) |
+| `DELETE` | `/api/rate-cards/{id}`             | Delete / deactivate a rate card rule                               | Yes (Bearer JWT) |
+| `POST`   | `/api/rate-cards/reset-benchmarks` | Restore standard Indian industry benchmarks (NPCI / RBI)           | Yes (Bearer JWT) |
+| `POST`   | `/api/rate-cards/calculate`        | Instant interactive preview of MDR, 18% GST, and net settlement    | Yes (Bearer JWT) |
+| `GET`    | `/api/fee-audit`                   | Comprehensive mathematical fee audit and overcharge classification | Yes (Bearer JWT) |
+| `GET`    | `/api/fee-audit/export`            | Download pre-formatted dispute claim CSV for Razorpay / Stripe     | Yes (Bearer JWT) |
+
+---
+
+## 10. Exception Classification & Resolution Queue API
+
+Rekon automatically classifies unmatched records into forensic root causes and provides an actionable resolution workflow for finance operators:
+
+| Method | Endpoint                            | Description                                                             | Auth Required    |
+| ------ | ----------------------------------- | ----------------------------------------------------------------------- | ---------------- |
+| `GET`  | `/api/exceptions`                   | Query tenant exceptions with filters (`status`, `type`, `severity`)     | Yes (Bearer JWT) |
+| `GET`  | `/api/exceptions/summary`           | Executive metrics: open items, total unresolved exposure, breakdowns    | Yes (Bearer JWT) |
+| `POST` | `/api/exceptions/{id}/manual-match` | Manually link unmatched records with 100% confidence score & audit note | Yes (Bearer JWT) |
+| `POST` | `/api/exceptions/{id}/write-off`    | 1-click write-off of minor deltas (≤ ₹50) to Rounding Expense ledger    | Yes (Bearer JWT) |
+| `POST` | `/api/exceptions/batch-write-off`   | Bulk write-off of all open minor rounding deltas under threshold (≤ ₹5) | Yes (Bearer JWT) |
+| `PUT`  | `/api/exceptions/{id}/status`       | Update queue status (`investigating`, `disputed`, `resolved`)           | Yes (Bearer JWT) |
+
+### Automated Exception Taxonomy:
+
+1. `TIMING_DIFFERENCE`: Clearing lag < 48 hours awaiting bank credit.
+2. `MISSING_BANK_CREDIT`: Settlement batches > 48 hours without bank deposit (CRITICAL/HIGH severity).
+3. `UNBILLED_CHARGE`: Captured gateway payments without subscription invoice.
+4. `UNIDENTIFIED_BANK_DEPOSIT`: Direct bank deposit with no gateway batch linkage.
+5. `PAISA_ROUNDING_DELTA`: Immaterial fractional discrepancy (≤ ₹5.00) eligible for write-off.
+6. `AMOUNT_MISMATCH` & `GATEWAY_FEE_DISCREPANCY`: Variance between invoice total and charged amount or fees.
+
+---
+
+## 11. Verification & Testing
+
+To run the complete automated test suite (86 passing tests):
 
 ```bash
 PYTHONPATH=backend backend/.venv/bin/pytest backend/tests/ -v
@@ -231,17 +299,36 @@ PYTHONPATH=backend backend/.venv/bin/pytest backend/tests/ -v
 
 ---
 
-## 9. Development Roadmap
+## 12. Development Roadmap
 
 - [x] **Phase 1: Step 1.1** — Project Scaffold (Docker Compose, FastAPI, React, Config)
 - [x] **Phase 1: Step 1.2** — Database Schema v1 & Alembic Migrations
 - [x] **Phase 1: Step 1.3** — Multi-Tenant Auth API (JWT, Register, Login)
 - [x] **Phase 1: Step 1.4** — CSV Ingestion & Normalization (Razorpay, Stripe, Chargebee)
 - [x] **Phase 1: Step 1.5** — Ingestion UI & Tabular Record Viewer (Phase 1 Complete 🎉)
-- [ ] **Phase 2** — Three-Layer Core Reconciliation Engine
-- [ ] **Phase 3** — MDR & 18% GST Fee Audit Engine
-- [ ] **Phase 4** — Exception Classification & Resolution Queue
-- [ ] **Phase 5** — Founder Dashboard & Cloud Deployment (Railway)
+- [x] **Phase 2** — Three-Layer Core Reconciliation Engine (Phase 2 Complete 🎉)
+  - [x] **Step 2.1** — ReconciliationRun & ReconciliationMatch Models + Migration
+  - [x] **Step 2.2** — Layer 1 Matching Engine (Invoices ↔ Gateway Transactions)
+  - [x] **Step 2.3** — Layer 2 Matching Engine (Gateway Transactions ↔ Settlement Lines)
+  - [x] **Step 2.4** — Layer 3 Matching Engine (Settlement Batches ↔ Bank Credits)
+  - [x] **Step 2.5** — Reconciliation Orchestrator & Execution API (`POST /api/reconcile`)
+  - [x] **Step 2.6** — Frontend Reconciliation Dashboard & Match Visualizer
+- [x] **Phase 3** — MDR & 18% GST Fee Audit Engine (Phase 3 Complete 🎉)
+  - [x] **Step 3.1** — Gateway Fee Rate Card Model & Migration
+  - [x] **Step 3.2** — 18% GST & MDR Mathematical Audit Engine
+  - [x] **Step 3.3** — Overcharge Detection & Dispute Flagging
+  - [x] **Step 3.4** — Fee Audit REST APIs (`/api/rate-cards`, `/api/fee-audit`)
+  - [x] **Step 3.5** — Fee Audit UI Dashboard & Rate Card Manager
+- [x] **Phase 4** — Exception Classification & Resolution Queue (Phase 4 Complete 🎉)
+  - [x] **Step 4.1** — ReconciliationException Data Models & Migration
+  - [x] **Step 4.2** — Automated Exception Classification Engine (6 Root Causes)
+  - [x] **Step 4.3** — Resolution Actions Service (Manual Match, Write-off, Batch)
+  - [x] **Step 4.4** — Exception Queue REST APIs & Summary Endpoints
+  - [x] **Step 4.5** — Resolution Queue Workspace UI (`ExceptionsHub.tsx`)
+- [x] **Phase 5** — Founder Dashboard & Cloud Deployment (Phase 5 Complete 🎉)
+  - [x] **Step 5.1** — Executive Analytics Service & REST APIs (`/api/analytics/dashboard`, waterfall, KPIs)
+  - [x] **Step 5.2** — Founder Executive Dashboard UI (`ExecutiveDashboard.tsx` with 5 Hero KPIs & Realization Waterfall)
+  - [x] **Step 5.3** — Production Containerization & Cloud Deployment Config (`Dockerfile`, `nginx.conf`, `railway.toml`, `DEPLOYMENT.md`)
 - [ ] **Phase 6** — Revenue Recognition (Ind AS 115)
 - [ ] **Phase 7** — Direct Gateway APIs & Webhooks (Razorpay, Stripe)
 - [ ] **Phase 8** — Multi-rail Economics & FX Analysis

@@ -20,6 +20,22 @@ from app.models.settlement import (
     SettlementLineTypeEnum,
 )
 from app.models.bank import BankCredit
+from app.models.reconciliation import (
+    ReconciliationRun,
+    ReconciliationMatch,
+    ReconciliationRunStatusEnum,
+    ReconciliationLayerEnum,
+    MatchTypeEnum,
+    MatchStatusEnum,
+)
+from app.models.rate_card import GatewayRateCard, RateTypeEnum
+from app.models.reconciliation_exception import (
+    ReconciliationException,
+    ExceptionTypeEnum,
+    ExceptionSeverityEnum,
+    ResolutionStatusEnum,
+    ResolutionActionEnum,
+)
 
 __all__ = [
     "TimestampMixin",
@@ -41,5 +57,17 @@ __all__ = [
     "SettlementLine",
     "SettlementLineTypeEnum",
     "BankCredit",
+    "ReconciliationRun",
+    "ReconciliationMatch",
+    "ReconciliationRunStatusEnum",
+    "ReconciliationLayerEnum",
+    "MatchTypeEnum",
+    "MatchStatusEnum",
+    "GatewayRateCard",
+    "RateTypeEnum",
+    "ReconciliationException",
+    "ExceptionTypeEnum",
+    "ExceptionSeverityEnum",
+    "ResolutionStatusEnum",
+    "ResolutionActionEnum",
 ]
-

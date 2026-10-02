@@ -30,6 +30,9 @@ class Organisation(Base, TimestampMixin):
     gateway_txns = relationship("GatewayTransaction", back_populates="organisation", cascade="all, delete-orphan")
     settlement_batches = relationship("SettlementBatch", back_populates="organisation", cascade="all, delete-orphan")
     bank_credits = relationship("BankCredit", back_populates="organisation", cascade="all, delete-orphan")
+    reconciliation_runs = relationship("ReconciliationRun", back_populates="organisation", cascade="all, delete-orphan")
+    rate_cards = relationship("GatewayRateCard", back_populates="organisation", cascade="all, delete-orphan")
+    exceptions = relationship("ReconciliationException", back_populates="organisation", cascade="all, delete-orphan")
 
 
 class User(Base, TimestampMixin):

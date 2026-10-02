@@ -1,15 +1,15 @@
-import React, { useState, useRef } from 'react';
-import { 
-  UploadCloud, 
-  FileText, 
-  CheckCircle2, 
-  AlertCircle, 
-  ChevronDown, 
-  ChevronUp, 
+import React, {useState, useRef} from "react";
+import {
+  UploadCloud,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
   Sparkles,
-  RefreshCw 
-} from 'lucide-react';
-import { api, UploadResult } from '../api/client';
+  RefreshCw,
+} from "lucide-react";
+import {api, UploadResult} from "../api/client";
 
 interface UploadZoneProps {
   title: string;
@@ -48,7 +48,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
       setResult(res);
       onUploadSuccess();
     } catch (err: any) {
-      setError(err.message || 'Upload failed');
+      setError(err.message || "Upload failed");
     } finally {
       setUploading(false);
     }
@@ -72,25 +72,27 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
   };
 
   const handleSampleUpload = () => {
-    const blob = new Blob([sampleCsv.trim()], { type: 'text/csv' });
-    const file = new File([blob], sampleFilename, { type: 'text/csv' });
+    const blob = new Blob([sampleCsv.trim()], {type: "text/csv"});
+    const file = new File([blob], sampleFilename, {type: "text/csv"});
     handleUpload(file);
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-6 shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
-            <FileText className="w-5 h-5 text-emerald-400" />
+          <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+            <FileText className="w-5 h-5 text-sky-500" />
             <span>{title}</span>
           </h3>
-          <p className="text-xs text-slate-400 mt-1">{description}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            {description}
+          </p>
         </div>
         <button
           onClick={handleSampleUpload}
           disabled={uploading}
-          className="inline-flex items-center space-x-1.5 text-xs font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg transition disabled:opacity-50 self-start sm:self-auto"
+          className="inline-flex items-center space-x-1.5 text-xs font-semibold bg-sky-50 hover:bg-sky-100 dark:bg-sky-950/50 dark:hover:bg-sky-900 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800 px-3.5 py-1.5 rounded-xl transition disabled:opacity-50 self-start sm:self-auto"
         >
           <Sparkles className="w-3.5 h-3.5" />
           <span>Load Sample Data</span>
@@ -103,10 +105,10 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
         onDragLeave={onDragLeave}
         onDrop={onDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+        className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-colors ${
           dragActive
-            ? 'border-emerald-500 bg-emerald-500/5'
-            : 'border-slate-800 hover:border-slate-700 bg-slate-950/50'
+            ? "border-sky-500 bg-sky-50/50 dark:bg-sky-950/20"
+            : "border-slate-200 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-950/40"
         }`}
       >
         <input
@@ -121,7 +123,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
           }}
         />
         <div className="flex flex-col items-center space-y-3">
-          <div className="p-3 bg-slate-800/80 text-emerald-400 rounded-full">
+          <div className="p-3 bg-sky-50 dark:bg-slate-800 text-sky-600 dark:text-sky-400 rounded-2xl border border-sky-100 dark:border-slate-700">
             {uploading ? (
               <RefreshCw className="w-6 h-6 animate-spin" />
             ) : (
@@ -129,79 +131,111 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
             )}
           </div>
           <div>
-            <span className="text-sm font-medium text-slate-200">
-              {uploading ? 'Parsing and validating records...' : 'Drop your CSV file here, or browse'}
+            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+              {uploading
+                ? "Parsing and validating records..."
+                : "Drop your CSV file here, or browse"}
             </span>
-            <p className="text-xs text-slate-500 mt-1">Accepted format: {acceptedFormat}</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              Accepted format: {acceptedFormat}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Upload Error Banner */}
       {error && (
-        <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-lg flex items-start space-x-3 text-rose-400 text-xs">
+        <div className="p-4 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-xl flex items-start space-x-3 text-rose-600 dark:text-rose-400 text-xs">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <div>
             <div className="font-semibold">Upload Failed</div>
-            <p className="mt-0.5 text-rose-300">{error}</p>
+            <p className="mt-0.5 opacity-90">{error}</p>
           </div>
         </div>
       )}
 
       {/* Upload Success Feedback Card */}
       {result && (
-        <div className="bg-slate-950/80 border border-slate-800 rounded-lg p-4 space-y-3">
+        <div className="bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-emerald-400 text-xs font-semibold">
+            <div className="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
               <CheckCircle2 className="w-4 h-4" />
               <span>{result.message}</span>
             </div>
-            <span className={`text-[11px] font-mono px-2 py-0.5 rounded-full ${
-              result.upload_job.status === 'completed'
-                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-            }`}>
-              {result.upload_job.status}
+            <span
+              className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-medium ${
+                result.upload_job.status === "completed"
+                  ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                  : "bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
+              }`}
+            >
+              {result.upload_job.status.toUpperCase()}
             </span>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 text-xs pt-2 border-t border-slate-800/60 font-mono">
+          <div className="grid grid-cols-3 gap-3 text-xs pt-2 border-t border-slate-200 dark:border-slate-800 font-mono">
             <div>
-              <span className="text-slate-500 block">Total Rows</span>
-              <span className="text-slate-200 font-semibold">{result.upload_job.total_rows}</span>
+              <span className="text-slate-400 block text-[10px] uppercase">
+                Total Rows
+              </span>
+              <span className="text-slate-800 dark:text-slate-200 font-semibold">
+                {result.upload_job.total_rows}
+              </span>
             </div>
             <div>
-              <span className="text-slate-500 block">Ingested Valid</span>
-              <span className="text-emerald-400 font-semibold">{result.upload_job.valid_rows}</span>
+              <span className="text-slate-400 block text-[10px] uppercase">
+                Ingested Valid
+              </span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                {result.upload_job.valid_rows}
+              </span>
             </div>
             <div>
-              <span className="text-slate-500 block">Exceptions / Duplicates</span>
-              <span className="text-amber-400 font-semibold">{result.upload_job.error_rows}</span>
+              <span className="text-slate-400 block text-[10px] uppercase">
+                Exceptions
+              </span>
+              <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                {result.upload_job.error_rows}
+              </span>
             </div>
           </div>
 
           {/* Expandable Error Log */}
-          {result.upload_job.error_details && result.upload_job.error_details.length > 0 && (
-            <div className="pt-2">
-              <button
-                onClick={() => setShowErrorDetails(!showErrorDetails)}
-                className="text-xs text-slate-400 hover:text-slate-200 flex items-center space-x-1"
-              >
-                <span>Audit Details ({result.upload_job.error_details.length})</span>
-                {showErrorDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              </button>
-              {showErrorDetails && (
-                <div className="mt-2 p-3 bg-slate-900 rounded border border-slate-800 max-h-40 overflow-y-auto text-xs space-y-1">
-                  {result.upload_job.error_details.map((item, idx) => (
-                    <div key={idx} className="text-slate-300 font-mono text-[11px] flex items-center justify-between">
-                      <span className="text-amber-400">Row {item.row} [{item.field}]:</span>
-                      <span className="text-slate-400">{item.message}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          {result.upload_job.error_details &&
+            result.upload_job.error_details.length > 0 && (
+              <div className="pt-2">
+                <button
+                  onClick={() => setShowErrorDetails(!showErrorDetails)}
+                  className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center space-x-1"
+                >
+                  <span>
+                    Audit Details ({result.upload_job.error_details.length})
+                  </span>
+                  {showErrorDetails ? (
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  )}
+                </button>
+                {showErrorDetails && (
+                  <div className="mt-2 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 max-h-40 overflow-y-auto text-xs space-y-1">
+                    {result.upload_job.error_details.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="text-slate-700 dark:text-slate-300 font-mono text-[11px] flex items-center justify-between"
+                      >
+                        <span className="text-amber-600 dark:text-amber-400">
+                          Row {item.row} [{item.field}]:
+                        </span>
+                        <span className="text-slate-500 dark:text-slate-400">
+                          {item.message}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
         </div>
       )}
     </div>

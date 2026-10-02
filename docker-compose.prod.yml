@@ -1,0 +1,70 @@
+version: "3.8"
+
+services:
+  # 1. PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: rekon-prod-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rekon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rekon_secret_prod_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-rekon_db}
+    volumes:
+      - rekon_prod_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-rekon} -d ${POSTGRES_DB:-rekon_db}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rekon-prod-net
+
+  # 2. FastAPI Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rekon-prod-backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-rekon}:${POSTGRES_PASSWORD:-rekon_secret_prod_pass}@db:5432/${POSTGRES_DB:-rekon_db}
+      SECRET_KEY: ${SECRET_KEY:-generate_secure_random_key_here}
+      ENVIRONMENT: production
+      PORT: 8000
+      WORKERS: 4
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:80,http://localhost}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks:
+      - rekon-prod-net
+
+  # 3. React SPA / Nginx Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    container_name: rekon-prod-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - rekon-prod-net
+
+volumes:
+  rekon_prod_postgres_data:
+
+networks:
+  rekon-prod-net:
+    driver: bridge

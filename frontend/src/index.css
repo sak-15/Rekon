@@ -3,7 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    @apply antialiased selection:bg-sky-500 selection:text-white;
+  }
   body {
-    @apply bg-slate-900 text-slate-100 min-h-screen;
+    @apply bg-slate-50 text-slate-900 min-h-screen dark:bg-slate-950 dark:text-slate-100 transition-colors duration-150;
   }
 }

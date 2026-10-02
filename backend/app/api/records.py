@@ -184,3 +184,4 @@ def get_bank_credits(
         page=page,
         page_size=page_size,
     )
+

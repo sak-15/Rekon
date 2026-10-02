@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { 
-  RefreshCw,
+import {useEffect, useState} from "react";
+import {
+  Sparkles,
   Layers,
   UploadCloud,
   FileSpreadsheet,
@@ -11,12 +11,23 @@ import {
   CreditCard,
   Landmark,
   FileText,
-} from 'lucide-react';
-import { api, UserInfo, OrgInfo, UploadJob } from './api/client';
-import { UploadZone } from './components/UploadZone';
-import { RecordTable } from './components/RecordTable';
-import { UploadHistory } from './components/UploadHistory';
-import { AuthModal } from './components/AuthModal';
+  Sun,
+  Moon,
+  RefreshCw,
+  Percent,
+  ShieldAlert,
+  LayoutDashboard,
+} from "lucide-react";
+
+import {api, UserInfo, OrgInfo, UploadJob} from "./api/client";
+import {UploadZone} from "./components/UploadZone";
+import {RecordTable} from "./components/RecordTable";
+import {UploadHistory} from "./components/UploadHistory";
+import {AuthModal} from "./components/AuthModal";
+import {ReconciliationHub} from "./components/ReconciliationHub";
+import {FeeAuditHub} from "./components/FeeAuditHub";
+import {ExceptionsHub} from "./components/ExceptionsHub";
+import {ExecutiveDashboard} from "./components/ExecutiveDashboard";
 
 // Sample CSV templates for instant 1-click testing
 const SAMPLE_INVOICES_CSV = `Invoice Number,Customer ID,Customer Name,Customer Email,Plan Name,Total,Tax Amount,Status,Invoice Date,Due Date
@@ -48,15 +59,57 @@ const SAMPLE_BANK_CSV = `Transaction Date,Narration,Credit Amount,Debit Amount,C
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserInfo | null>(null);
   const [currentOrg, setCurrentOrg] = useState<OrgInfo | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'upload' | 'records' | 'history'>('upload');
-  const [uploadCategory, setUploadCategory] = useState<'invoices' | 'gateway' | 'settlements' | 'bank'>('invoices');
-  const [recordCategory, setRecordCategory] = useState<'invoices' | 'gateway-txns' | 'settlements' | 'bank-credits'>('invoices');
+  const [activeTab, setActiveTab] = useState<
+    | "overview"
+    | "reconcile"
+    | "fee_audit"
+    | "exceptions"
+    | "upload"
+    | "records"
+    | "history"
+    | "specs"
+  >("overview");
+  const [uploadCategory, setUploadCategory] = useState<
+    "invoices" | "gateway" | "settlements" | "bank"
+  >("invoices");
+  const [recordCategory, setRecordCategory] = useState<
+    "invoices" | "gateway-txns" | "settlements" | "bank-credits"
+  >("invoices");
 
   const [records, setRecords] = useState<any[]>([]);
   const [loadingRecords, setLoadingRecords] = useState(false);
   const [uploadJobs, setUploadJobs] = useState<UploadJob[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [openExceptionsCount, setOpenExceptionsCount] = useState<number>(0);
+
+  // Theme state: default to 'light'
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    const saved = localStorage.getItem("rekon_theme");
+    return saved === "dark" ? "dark" : "light";
+  });
+
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    localStorage.setItem("rekon_theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  };
+
+  const refreshExceptionCount = async () => {
+    try {
+      const sum = await api.getExceptionSummary();
+      setOpenExceptionsCount(sum.open_count);
+    } catch {
+      setOpenExceptionsCount(0);
+    }
+  };
 
   // Load session on startup
   const refreshSession = async () => {
@@ -64,6 +117,7 @@ export default function App() {
       const data = await api.getMe();
       setCurrentUser(data.user);
       setCurrentOrg(data.organisation);
+      refreshExceptionCount();
     } catch {
       setCurrentUser(null);
       setCurrentOrg(null);
@@ -100,9 +154,9 @@ export default function App() {
 
   useEffect(() => {
     if (currentOrg) {
-      if (activeTab === 'records') {
+      if (activeTab === "records") {
         loadRecords(recordCategory);
-      } else if (activeTab === 'history') {
+      } else if (activeTab === "history") {
         loadUploadJobs();
       }
     }
@@ -115,407 +169,729 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white">
-      {/* Top Header */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="h-9 w-9 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-lg">
-              R
-            </div>
-            <div>
-              <span className="font-semibold text-lg tracking-tight">Rekon</span>
-              <span className="ml-2 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-mono">
-                Phase 1 Verified
+    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-150">
+      {/* 1. SIGNATURE DARK LEFT NAVIGATION RAIL (#0f172a / slate-900) */}
+      <aside className="w-64 bg-slate-900 border-r border-slate-800 text-slate-300 flex flex-col flex-shrink-0 select-none">
+        {/* Brand Header */}
+        <div className="h-16 px-6 flex items-center space-x-3 border-b border-slate-800/80">
+          <div className="w-8 h-8 rounded-xl bg-sky-600 text-white font-bold text-sm flex items-center justify-center shadow-md shadow-sky-600/30">
+            R
+          </div>
+          <div>
+            <div className="font-bold text-base tracking-tight text-white flex items-center space-x-1.5">
+              <span>Rekon</span>
+              <span className="text-[10px] font-semibold text-sky-400 bg-sky-950 px-1.5 py-0.5 rounded border border-sky-800/60">
+                v2.0
               </span>
             </div>
+            <div className="text-[10px] text-slate-400 -mt-0.5">
+              Reconciliation Engine
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
+          <div className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Executive
           </div>
 
-          {/* User Session & Tenant Status */}
-          <div className="flex items-center space-x-3 text-xs">
-            {currentOrg ? (
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg">
-                  <Building2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="font-medium text-white">{currentOrg.name}</span>
-                  <span className="text-slate-500 font-mono text-[10px]">({currentOrg.slug})</span>
-                  {currentUser && (
-                    <span className="text-slate-400 font-sans text-[11px] border-l border-slate-800 pl-2">
-                      {currentUser.email}
-                    </span>
-                  )}
+          {/* 0. Executive Overview */}
+          <button
+            onClick={() => setActiveTab("overview")}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+              activeTab === "overview"
+                ? "bg-sky-600 text-white shadow-sm shadow-sky-500/20"
+                : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <LayoutDashboard className="w-4 h-4" />
+              <span>Executive Overview</span>
+            </div>
+            <span
+              className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
+                activeTab === "overview"
+                  ? "bg-white/20 text-white"
+                  : "bg-slate-800 text-slate-400"
+              }`}
+            >
+              Cockpit
+            </span>
+          </button>
+
+          <div className="pt-3 px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Core Engine
+          </div>
+
+          {/* 1. Reconciliation Hub */}
+          <button
+            onClick={() => setActiveTab("reconcile")}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+              activeTab === "reconcile"
+                ? "bg-sky-600 text-white shadow-sm shadow-sky-500/20"
+                : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <Sparkles className="w-4 h-4" />
+              <span>Reconciliation Hub</span>
+            </div>
+            <span
+              className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
+                activeTab === "reconcile"
+                  ? "bg-white/20 text-white"
+                  : "bg-slate-800 text-slate-400"
+              }`}
+            >
+              Active
+            </span>
+          </button>
+
+          {/* 1b. Fee Audit & Rates */}
+          <button
+            onClick={() => setActiveTab("fee_audit")}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+              activeTab === "fee_audit"
+                ? "bg-sky-600 text-white shadow-sm shadow-sky-500/20"
+                : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <Percent className="w-4 h-4" />
+              <span>Fee Audit & Rates</span>
+            </div>
+            <span
+              className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
+                activeTab === "fee_audit"
+                  ? "bg-white/20 text-white"
+                  : "bg-slate-800 text-slate-400"
+              }`}
+            >
+              18% GST
+            </span>
+          </button>
+
+          {/* 1c. Resolution Queue */}
+          <button
+            onClick={() => setActiveTab("exceptions")}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+              activeTab === "exceptions"
+                ? "bg-sky-600 text-white shadow-sm shadow-sky-500/20"
+                : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <ShieldAlert className="w-4 h-4" />
+              <span>Resolution Queue</span>
+            </div>
+            {openExceptionsCount > 0 ? (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-mono">
+                {openExceptionsCount}
+              </span>
+            ) : (
+              <span
+                className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${
+                  activeTab === "exceptions"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-800 text-slate-400"
+                }`}
+              >
+                Queue
+              </span>
+            )}
+          </button>
+
+          {/* 2. CSV Ingestion Hub */}
+          <button
+            onClick={() => setActiveTab("upload")}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+              activeTab === "upload"
+                ? "bg-sky-600 text-white shadow-sm shadow-sky-500/20"
+                : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <UploadCloud className="w-4 h-4" />
+              <span>Data Ingestion</span>
+            </div>
+          </button>
+
+          {/* 3. Records Explorer */}
+          <button
+            onClick={() => setActiveTab("records")}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+              activeTab === "records"
+                ? "bg-sky-600 text-white shadow-sm shadow-sky-500/20"
+                : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Raw Records</span>
+            </div>
+          </button>
+
+          {/* 4. Upload Audit Log */}
+          <button
+            onClick={() => setActiveTab("history")}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+              activeTab === "history"
+                ? "bg-sky-600 text-white shadow-sm shadow-sky-500/20"
+                : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <History className="w-4 h-4" />
+              <span>Upload Audit Log</span>
+            </div>
+          </button>
+
+          <div className="pt-4 px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            System & Specs
+          </div>
+
+          {/* 5. Architecture Specs */}
+          <button
+            onClick={() => setActiveTab("specs")}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition ${
+              activeTab === "specs"
+                ? "bg-sky-600 text-white shadow-sm shadow-sky-500/20"
+                : "text-slate-300 hover:text-white hover:bg-slate-800/60"
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <Layers className="w-4 h-4" />
+              <span>Architecture Specs</span>
+            </div>
+          </button>
+        </nav>
+
+        {/* Tenant Profile Footer in Sidebar */}
+        <div className="p-3 border-t border-slate-800 bg-slate-950/40">
+          {currentOrg ? (
+            <div className="p-2.5 rounded-xl bg-slate-800/50 border border-slate-700/60 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 truncate">
+                  <Building2 className="w-4 h-4 text-sky-400 flex-shrink-0" />
+                  <span className="font-semibold text-xs text-white truncate">
+                    {currentOrg.name}
+                  </span>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-900 transition"
+                  className="text-slate-400 hover:text-rose-400 p-1 rounded transition"
                   title="Sign Out"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5" />
                 </button>
               </div>
-            ) : (
-              <button
-                onClick={() => setAuthModalOpen(true)}
-                className="inline-flex items-center space-x-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold px-3 py-1.5 rounded-lg transition"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Sign In / Demo Tenant</span>
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Navigation Sub-bar */}
-      <div className="border-b border-slate-800 bg-slate-900/30">
-        <div className="max-w-6xl mx-auto px-6 flex space-x-1">
-          <button
-            onClick={() => setActiveTab('upload')}
-            className={`px-4 py-3 text-xs font-medium border-b-2 flex items-center space-x-2 transition ${
-              activeTab === 'upload'
-                ? 'border-emerald-400 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <UploadCloud className="w-4 h-4" />
-            <span>CSV Ingestion Hub</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('records')}
-            className={`px-4 py-3 text-xs font-medium border-b-2 flex items-center space-x-2 transition ${
-              activeTab === 'records'
-                ? 'border-emerald-400 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Records Explorer</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`px-4 py-3 text-xs font-medium border-b-2 flex items-center space-x-2 transition ${
-              activeTab === 'history'
-                ? 'border-emerald-400 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <History className="w-4 h-4" />
-            <span>Upload Audit Log</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-4 py-3 text-xs font-medium border-b-2 flex items-center space-x-2 transition ${
-              activeTab === 'overview'
-                ? 'border-emerald-400 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            <span>Architecture Overview</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content Body */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-8 space-y-8">
-        {!currentOrg && (
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-emerald-300">
-            <div className="flex items-center space-x-2">
-              <Building2 className="w-4 h-4 flex-shrink-0 text-emerald-400" />
-              <span>
-                You are currently in guest mode. <strong>Sign in</strong> or click <strong>One-Click Demo Session</strong> to experience multi-tenant data isolation.
-              </span>
+              <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                <span>{currentOrg.currency || "INR"}</span>
+                <span className="truncate max-w-[120px]">
+                  {currentUser?.email}
+                </span>
+              </div>
             </div>
+          ) : (
             <button
               onClick={() => setAuthModalOpen(true)}
-              className="px-3 py-1.5 bg-emerald-500 text-slate-950 font-semibold rounded-lg hover:bg-emerald-400 transition"
+              className="w-full flex items-center justify-center space-x-2 py-2 px-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-semibold shadow-sm transition"
             >
-              Sign In
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In / Demo</span>
             </button>
+          )}
+        </div>
+      </aside>
+
+      {/* 2. MAIN WORKSPACE CANVAS */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Header Bar */}
+        <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-30 px-6 flex items-center justify-between transition-colors">
+          {/* Breadcrumb / Page Title */}
+          <div className="flex items-center space-x-2 text-xs">
+            <span className="text-slate-400">Workspace</span>
+            <span className="text-slate-300 dark:text-slate-600">/</span>
+            <span className="font-semibold text-slate-800 dark:text-white capitalize">
+              {activeTab === "overview"
+                ? "Executive Overview"
+                : activeTab === "reconcile"
+                ? "Reconciliation Hub"
+                : activeTab === "fee_audit"
+                ? "Fee Audit & Rates"
+                : activeTab === "exceptions"
+                ? "Exception Resolution Queue"
+                : activeTab === "upload"
+                ? "Data Ingestion"
+                : activeTab === "records"
+                ? "Raw Records Explorer"
+                : activeTab === "history"
+                ? "Upload Audit Log"
+                : "Architecture Specs"}
+            </span>
           </div>
-        )}
 
-        {/* --- TAB 1: CSV INGESTION HUB --- */}
-        {activeTab === 'upload' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-bold text-white">CSV Ingestion Hub</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Upload raw financial data from your billing engine, payment gateways, and bank accounts.
-              </p>
-            </div>
+          {/* Right Header Actions */}
+          <div className="flex items-center space-x-3">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition shadow-sm"
+              title={`Switch to ${theme === "light" ? "Dark" : "Light"} mode`}
+            >
+              {theme === "light" ? (
+                <Moon className="w-4 h-4 text-slate-700" />
+              ) : (
+                <Sun className="w-4 h-4 text-amber-400" />
+              )}
+            </button>
 
-            {/* Category Sub-Navigation */}
-            <div className="flex flex-wrap gap-2 text-xs">
-              <button
-                onClick={() => setUploadCategory('invoices')}
-                className={`px-3 py-1.5 rounded-lg font-medium flex items-center space-x-2 transition ${
-                  uploadCategory === 'invoices'
-                    ? 'bg-slate-800 text-white border border-slate-700'
-                    : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5 text-blue-400" />
-                <span>1. Subscription Invoices</span>
-              </button>
-
-              <button
-                onClick={() => setUploadCategory('gateway')}
-                className={`px-3 py-1.5 rounded-lg font-medium flex items-center space-x-2 transition ${
-                  uploadCategory === 'gateway'
-                    ? 'bg-slate-800 text-white border border-slate-700'
-                    : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <CreditCard className="w-3.5 h-3.5 text-purple-400" />
-                <span>2. Gateway Charges (Razorpay / Stripe)</span>
-              </button>
-
-              <button
-                onClick={() => setUploadCategory('settlements')}
-                className={`px-3 py-1.5 rounded-lg font-medium flex items-center space-x-2 transition ${
-                  uploadCategory === 'settlements'
-                    ? 'bg-slate-800 text-white border border-slate-700'
-                    : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-amber-400" />
-                <span>3. Settlement Payouts</span>
-              </button>
-
-              <button
-                onClick={() => setUploadCategory('bank')}
-                className={`px-3 py-1.5 rounded-lg font-medium flex items-center space-x-2 transition ${
-                  uploadCategory === 'bank'
-                    ? 'bg-slate-800 text-white border border-slate-700'
-                    : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Landmark className="w-3.5 h-3.5 text-emerald-400" />
-                <span>4. Bank Statement Credits</span>
-              </button>
-            </div>
-
-            {/* Active Category Upload Zone */}
-            {uploadCategory === 'invoices' && (
-              <UploadZone
-                title="Subscription Invoices Ingestion"
-                description="Ingests customer plan billings from Chargebee, Zoho Subscriptions, or canonical CSV exports."
-                endpoint="/api/uploads/invoices"
-                acceptedFormat="Chargebee export (.csv)"
-                sampleCsv={SAMPLE_INVOICES_CSV}
-                sampleFilename="chargebee_invoices_sample.csv"
-                onUploadSuccess={() => {
-                  loadUploadJobs();
-                }}
-              />
-            )}
-
-            {uploadCategory === 'gateway' && (
-              <UploadZone
-                title="Gateway Transactions Ingestion"
-                description="Auto-detects Razorpay or Stripe transaction reports. Normalizes gross charges, MDR fees, and 18% GST."
-                endpoint="/api/uploads/gateway-txns"
-                acceptedFormat="Razorpay payments or Stripe charges (.csv)"
-                sampleCsv={SAMPLE_RAZORPAY_TXNS_CSV}
-                sampleFilename="razorpay_payments_sample.csv"
-                onUploadSuccess={() => {
-                  loadUploadJobs();
-                }}
-              />
-            )}
-
-            {uploadCategory === 'settlements' && (
-              <UploadZone
-                title="Settlement Payouts Ingestion"
-                description="Ingests payout batches with gross totals, deducted MDR, GST, refunds, and UTR reference codes."
-                endpoint="/api/uploads/settlements"
-                acceptedFormat="Gateway settlement report (.csv)"
-                sampleCsv={SAMPLE_SETTLEMENTS_CSV}
-                sampleFilename="settlement_batches_sample.csv"
-                onUploadSuccess={() => {
-                  loadUploadJobs();
-                }}
-              />
-            )}
-
-            {uploadCategory === 'bank' && (
-              <UploadZone
-                title="Bank Statement Credits Ingestion"
-                description="Ingests bank deposit lines, transaction dates, and UTR narrations from HDFC, ICICI, Axis, etc."
-                endpoint="/api/uploads/bank-statements"
-                acceptedFormat="Bank statement export (.csv)"
-                sampleCsv={SAMPLE_BANK_CSV}
-                sampleFilename="hdfc_bank_statement_sample.csv"
-                onUploadSuccess={() => {
-                  loadUploadJobs();
-                }}
-              />
+            {/* Tenant status badge */}
+            {currentOrg && (
+              <div className="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{currentOrg.name}</span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  [{currentOrg.currency}]
+                </span>
+              </div>
             )}
           </div>
-        )}
+        </header>
 
-        {/* --- TAB 2: RECORDS EXPLORER --- */}
-        {activeTab === 'records' && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Content Body */}
+        <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto">
+          {/* Guest notification if unauthenticated */}
+          {!currentOrg && (
+            <div className="p-4 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-sky-900 dark:text-sky-300">
+              <div className="flex items-center space-x-2">
+                <Building2 className="w-4 h-4 flex-shrink-0 text-sky-600 dark:text-sky-400" />
+                <span>
+                  You are currently in guest mode. <strong>Sign in</strong> or
+                  click <strong>One-Click Demo Session</strong> to experience
+                  multi-tenant reconciliation.
+                </span>
+              </div>
+              <button
+                onClick={() => setAuthModalOpen(true)}
+                className="px-3.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-xl shadow-sm transition self-start sm:self-auto"
+              >
+                Sign In / Demo
+              </button>
+            </div>
+          )}
+
+          {/* --- TAB 0: FOUNDER EXECUTIVE DASHBOARD --- */}
+          {activeTab === "overview" && (
+            <ExecutiveDashboard
+              onNavigate={(target) => {
+                if (target === "fee-audit") setActiveTab("fee_audit");
+                else if (target === "exceptions") setActiveTab("exceptions");
+                else if (target === "reconcile") setActiveTab("reconcile");
+                else if (target === "upload") setActiveTab("upload");
+              }}
+              orgName={currentOrg?.name}
+            />
+          )}
+
+          {/* --- TAB 1: RECONCILIATION HUB --- */}
+          {activeTab === "reconcile" && (
+            <ReconciliationHub
+              isAuthenticated={!!currentOrg}
+              onOpenAuth={() => setAuthModalOpen(true)}
+              onNavigateToExceptions={() => setActiveTab("exceptions")}
+              onRunFinished={() => {
+                loadRecords();
+                loadUploadJobs();
+                refreshExceptionCount();
+              }}
+            />
+          )}
+
+          {/* --- TAB 1b: MDR & 18% GST FEE AUDIT HUB --- */}
+          {activeTab === "fee_audit" && (
+            <FeeAuditHub
+              onRefresh={() => {
+                loadRecords();
+              }}
+            />
+          )}
+
+          {/* --- TAB 1c: EXCEPTION RESOLUTION QUEUE --- */}
+          {activeTab === "exceptions" && (
+            <ExceptionsHub
+              onRefreshParent={() => {
+                loadRecords();
+                refreshExceptionCount();
+              }}
+            />
+          )}
+
+          {/* --- TAB 2: DATA INGESTION HUB --- */}
+          {activeTab === "upload" && (
+            <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-bold text-white">Ingested Records Explorer</h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Inspect normalized records currently stored in your tenant database partition.
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  CSV Ingestion Hub
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Upload raw financial data from your billing engine, payment
+                  gateways, and bank accounts.
                 </p>
               </div>
 
-              <button
-                onClick={() => loadRecords(recordCategory)}
-                disabled={loadingRecords}
-                className="inline-flex items-center space-x-1.5 text-xs bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3 py-1.5 rounded-lg transition"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingRecords ? 'animate-spin' : ''}`} />
-                <span>Refresh Data</span>
-              </button>
+              {/* Category Sub-Navigation */}
+              <div className="flex flex-wrap gap-2 text-xs">
+                <button
+                  onClick={() => setUploadCategory("invoices")}
+                  className={`px-3 py-1.5 rounded-xl font-medium flex items-center space-x-2 transition ${
+                    uploadCategory === "invoices"
+                      ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 shadow-sm"
+                      : "bg-slate-100 dark:bg-slate-900 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5 text-sky-500" />
+                  <span>1. Subscription Invoices</span>
+                </button>
+
+                <button
+                  onClick={() => setUploadCategory("gateway")}
+                  className={`px-3 py-1.5 rounded-xl font-medium flex items-center space-x-2 transition ${
+                    uploadCategory === "gateway"
+                      ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 shadow-sm"
+                      : "bg-slate-100 dark:bg-slate-900 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  }`}
+                >
+                  <CreditCard className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>2. Gateway Charges (Razorpay / Stripe)</span>
+                </button>
+
+                <button
+                  onClick={() => setUploadCategory("settlements")}
+                  className={`px-3 py-1.5 rounded-xl font-medium flex items-center space-x-2 transition ${
+                    uploadCategory === "settlements"
+                      ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 shadow-sm"
+                      : "bg-slate-100 dark:bg-slate-900 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  }`}
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-purple-500" />
+                  <span>3. Settlement Payouts</span>
+                </button>
+
+                <button
+                  onClick={() => setUploadCategory("bank")}
+                  className={`px-3 py-1.5 rounded-xl font-medium flex items-center space-x-2 transition ${
+                    uploadCategory === "bank"
+                      ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 shadow-sm"
+                      : "bg-slate-100 dark:bg-slate-900 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  }`}
+                >
+                  <Landmark className="w-3.5 h-3.5 text-teal-500" />
+                  <span>4. Bank Statement Credits</span>
+                </button>
+              </div>
+
+              {/* Active Category Upload Zone */}
+              {uploadCategory === "invoices" && (
+                <UploadZone
+                  title="Subscription Invoices Ingestion"
+                  description="Ingests customer plan billings from Chargebee, Zoho Subscriptions, or canonical CSV exports."
+                  endpoint="/api/uploads/invoices"
+                  acceptedFormat="Chargebee export (.csv)"
+                  sampleCsv={SAMPLE_INVOICES_CSV}
+                  sampleFilename="chargebee_invoices_sample.csv"
+                  onUploadSuccess={() => {
+                    loadUploadJobs();
+                  }}
+                />
+              )}
+
+              {uploadCategory === "gateway" && (
+                <UploadZone
+                  title="Gateway Transactions Ingestion"
+                  description="Auto-detects Razorpay or Stripe transaction reports. Normalizes gross charges, MDR fees, and 18% GST."
+                  endpoint="/api/uploads/gateway-txns"
+                  acceptedFormat="Razorpay payments or Stripe charges (.csv)"
+                  sampleCsv={SAMPLE_RAZORPAY_TXNS_CSV}
+                  sampleFilename="razorpay_payments_sample.csv"
+                  onUploadSuccess={() => {
+                    loadUploadJobs();
+                  }}
+                />
+              )}
+
+              {uploadCategory === "settlements" && (
+                <UploadZone
+                  title="Settlement Payouts Ingestion"
+                  description="Ingests payout batches with gross totals, deducted MDR, GST, refunds, and UTR reference codes."
+                  endpoint="/api/uploads/settlements"
+                  acceptedFormat="Gateway settlement report (.csv)"
+                  sampleCsv={SAMPLE_SETTLEMENTS_CSV}
+                  sampleFilename="settlement_batches_sample.csv"
+                  onUploadSuccess={() => {
+                    loadUploadJobs();
+                  }}
+                />
+              )}
+
+              {uploadCategory === "bank" && (
+                <UploadZone
+                  title="Bank Statement Credits Ingestion"
+                  description="Ingests bank deposit lines, transaction dates, and UTR narrations from HDFC, ICICI, Axis, etc."
+                  endpoint="/api/uploads/bank-statements"
+                  acceptedFormat="Bank statement export (.csv)"
+                  sampleCsv={SAMPLE_BANK_CSV}
+                  sampleFilename="hdfc_bank_statement_sample.csv"
+                  onUploadSuccess={() => {
+                    loadUploadJobs();
+                  }}
+                />
+              )}
             </div>
+          )}
 
-            {/* Sub-Tabs for Record Categories */}
-            <div className="flex flex-wrap gap-2 text-xs">
-              <button
-                onClick={() => setRecordCategory('invoices')}
-                className={`px-3 py-1.5 rounded-lg font-medium transition ${
-                  recordCategory === 'invoices'
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Invoices ({recordCategory === 'invoices' ? records.length : '...'})
-              </button>
-              <button
-                onClick={() => setRecordCategory('gateway-txns')}
-                className={`px-3 py-1.5 rounded-lg font-medium transition ${
-                  recordCategory === 'gateway-txns'
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Gateway Transactions
-              </button>
-              <button
-                onClick={() => setRecordCategory('settlements')}
-                className={`px-3 py-1.5 rounded-lg font-medium transition ${
-                  recordCategory === 'settlements'
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Settlement Batches
-              </button>
-              <button
-                onClick={() => setRecordCategory('bank-credits')}
-                className={`px-3 py-1.5 rounded-lg font-medium transition ${
-                  recordCategory === 'bank-credits'
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-slate-900 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Bank Credits
-              </button>
+          {/* --- TAB 3: RECORDS EXPLORER --- */}
+          {activeTab === "records" && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                    Ingested Records Explorer
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Inspect normalized records currently stored in your tenant
+                    database partition.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => loadRecords(recordCategory)}
+                  disabled={loadingRecords}
+                  className="inline-flex items-center space-x-1.5 text-xs bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3.5 py-2 rounded-xl transition shadow-sm"
+                >
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${
+                      loadingRecords ? "animate-spin" : ""
+                    }`}
+                  />
+                  <span>Refresh Data</span>
+                </button>
+              </div>
+
+              {/* Sub-Tabs for Record Categories */}
+              <div className="flex flex-wrap gap-2 text-xs">
+                <button
+                  onClick={() => setRecordCategory("invoices")}
+                  className={`px-3 py-1.5 rounded-xl font-medium transition ${
+                    recordCategory === "invoices"
+                      ? "bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 border border-slate-200 dark:border-slate-700 shadow-sm"
+                      : "bg-slate-100 dark:bg-slate-900 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  }`}
+                >
+                  Invoices (
+                  {recordCategory === "invoices" ? records.length : "..."})
+                </button>
+                <button
+                  onClick={() => setRecordCategory("gateway-txns")}
+                  className={`px-3 py-1.5 rounded-xl font-medium transition ${
+                    recordCategory === "gateway-txns"
+                      ? "bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 border border-slate-200 dark:border-slate-700 shadow-sm"
+                      : "bg-slate-100 dark:bg-slate-900 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  }`}
+                >
+                  Gateway Transactions
+                </button>
+                <button
+                  onClick={() => setRecordCategory("settlements")}
+                  className={`px-3 py-1.5 rounded-xl font-medium transition ${
+                    recordCategory === "settlements"
+                      ? "bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 border border-slate-200 dark:border-slate-700 shadow-sm"
+                      : "bg-slate-100 dark:bg-slate-900 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  }`}
+                >
+                  Settlement Batches
+                </button>
+                <button
+                  onClick={() => setRecordCategory("bank-credits")}
+                  className={`px-3 py-1.5 rounded-xl font-medium transition ${
+                    recordCategory === "bank-credits"
+                      ? "bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 border border-slate-200 dark:border-slate-700 shadow-sm"
+                      : "bg-slate-100 dark:bg-slate-900 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  }`}
+                >
+                  Bank Credits
+                </button>
+              </div>
+
+              <RecordTable
+                category={recordCategory}
+                records={records}
+                loading={loadingRecords}
+              />
             </div>
+          )}
 
-            <RecordTable category={recordCategory} records={records} loading={loadingRecords} />
-          </div>
-        )}
+          {/* --- TAB 4: UPLOAD AUDIT LOG --- */}
+          {activeTab === "history" && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                    Upload Job Audit Log
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Full history of batch ingestion jobs, valid row counts,
+                    duplicate deduplications, and parsing diagnostics.
+                  </p>
+                </div>
+                <button
+                  onClick={loadUploadJobs}
+                  disabled={loadingJobs}
+                  className="inline-flex items-center space-x-1.5 text-xs bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-3.5 py-2 rounded-xl transition shadow-sm"
+                >
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${
+                      loadingJobs ? "animate-spin" : ""
+                    }`}
+                  />
+                  <span>Refresh Log</span>
+                </button>
+              </div>
 
-        {/* --- TAB 3: UPLOAD AUDIT LOG --- */}
-        {activeTab === 'history' && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold text-white">Upload Job Audit Log</h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Full history of batch ingestion jobs, valid row counts, duplicate deduplications, and parsing diagnostics.
+              <UploadHistory jobs={uploadJobs} loading={loadingJobs} />
+            </div>
+          )}
+
+          {/* --- TAB 5: ARCHITECTURE SPECS --- */}
+          {activeTab === "specs" && (
+            <div className="space-y-8">
+              <div className="space-y-2">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                  The Three-Layer Reconciliation Pipeline
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-3xl">
+                  Rekon guarantees financial correctness by linking subscription
+                  invoices to charges, charges to settlement payout batches, and
+                  batches to actual bank account deposits.
                 </p>
               </div>
-              <button
-                onClick={loadUploadJobs}
-                disabled={loadingJobs}
-                className="inline-flex items-center space-x-1.5 text-xs bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3 py-1.5 rounded-lg transition"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${loadingJobs ? 'animate-spin' : ''}`} />
-                <span>Refresh Log</span>
-              </button>
-            </div>
 
-            <UploadHistory jobs={uploadJobs} loading={loadingJobs} />
-          </div>
-        )}
-
-        {/* --- TAB 4: ARCHITECTURE OVERVIEW --- */}
-        {activeTab === 'overview' && (
-          <div className="space-y-8">
-            <div className="space-y-3">
-              <h2 className="text-xl font-bold text-white">The Three-Layer Reconciliation Pipeline</h2>
-              <p className="text-xs text-slate-400 leading-relaxed max-w-3xl">
-                Rekon guarantees financial correctness by linking subscription invoices to charges, charges to settlement payout batches, and batches to actual bank account deposits.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-2">
-                <div className="text-xs font-mono text-blue-400">Layer 1: Input</div>
-                <div className="font-semibold text-white text-sm">Subscription System</div>
-                <p className="text-xs text-slate-400">Chargebee / Zoho invoices, plans, proration, due dates.</p>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-2">
-                <div className="text-xs font-mono text-purple-400">Layer 1 ↔ 2: Gateway</div>
-                <div className="font-semibold text-white text-sm">Gateway Transactions</div>
-                <p className="text-xs text-slate-400">Razorpay & Stripe charges, MDR fees, GST, UPI/Card/eNACH.</p>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-2">
-                <div className="text-xs font-mono text-amber-400">Layer 2 ↔ 3: Settlement</div>
-                <div className="font-semibold text-white text-sm">Settlement Batches</div>
-                <p className="text-xs text-slate-400">T+n batch payouts, net deduplication, adjustments, refunds.</p>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-2">
-                <div className="text-xs font-mono text-emerald-400">Layer 3: Cash</div>
-                <div className="font-semibold text-white text-sm">Bank Statement Credits</div>
-                <p className="text-xs text-slate-400">Verified cash deposit in bank, UTR numbers, zero variance.</p>
-              </div>
-            </div>
-
-            {/* Architecture Card Status */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-4">
-              <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-5 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-300">Phase 1: Foundation</span>
-                  <span className="text-xs text-emerald-400 font-mono">100% Complete</span>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-2 shadow-sm">
+                  <div className="text-xs font-mono text-sky-600 dark:text-sky-400 font-bold">
+                    Layer 1: Input
+                  </div>
+                  <div className="font-semibold text-slate-900 dark:text-white text-sm">
+                    Subscription Invoices
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Chargebee / Zoho invoices, plans, proration, due dates.
+                  </p>
                 </div>
-                <p className="text-xs text-slate-400">Scaffold, Database models, Multi-tenant Auth, Ingestion API & UI.</p>
+
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-2 shadow-sm">
+                  <div className="text-xs font-mono text-purple-600 dark:text-purple-400 font-bold">
+                    Layer 1 ↔ 2: Gateway
+                  </div>
+                  <div className="font-semibold text-slate-900 dark:text-white text-sm">
+                    Gateway Charges
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Razorpay & Stripe charges, MDR fees, GST, UPI/Card/eNACH.
+                  </p>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-2 shadow-sm">
+                  <div className="text-xs font-mono text-purple-600 dark:text-purple-400 font-bold">
+                    Layer 2 ↔ 3: Settlement
+                  </div>
+                  <div className="font-semibold text-slate-900 dark:text-white text-sm">
+                    Settlement Batches
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    T+n batch payouts, net deduplication, adjustments, refunds.
+                  </p>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-2 shadow-sm">
+                  <div className="text-xs font-mono text-teal-600 dark:text-teal-400 font-bold">
+                    Layer 3: Cash
+                  </div>
+                  <div className="font-semibold text-slate-900 dark:text-white text-sm">
+                    Bank Statement Credits
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Verified cash deposit in bank, UTR numbers, zero variance.
+                  </p>
+                </div>
               </div>
 
-              <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-5 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-300">Phase 2: Next</span>
-                  <span className="text-xs text-slate-500 font-mono">Upcoming</span>
+              {/* Status Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-2 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Phase 1: Ingestion & Auth
+                    </span>
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                      100% Complete
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Multi-tenant data isolation, canonical normalization, CSV
+                    parsers.
+                  </p>
                 </div>
-                <p className="text-xs text-slate-400">3-Layer matching engine, tolerance thresholds, reconciliation runs.</p>
-              </div>
 
-              <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-5 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-300">Phase 3: Fee Audit</span>
-                  <span className="text-xs text-slate-500 font-mono">Upcoming</span>
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-2 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Phase 2: Reconciliation
+                    </span>
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                      100% Complete
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Three-layer matching engines, orchestrator, tolerance
+                    configuration, dashboard.
+                  </p>
                 </div>
-                <p className="text-xs text-slate-400">MDR rate card verification and 18% GST audit rules.</p>
+
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-2 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Phase 3: Fee Audit & Rates
+                    </span>
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                      100% Complete
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    MDR rate cards, 18% GST audit rules, and claim CSV export.
+                  </p>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-2 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Phase 4: Resolution Queue
+                    </span>
+                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                      100% Complete
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Auto-classification, 1-click write-offs, manual link &
+                    dispute tickets.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </main>
+          )}
+        </main>
+      </div>
 
       {/* Auth Modal */}
       <AuthModal
@@ -526,11 +902,6 @@ export default function App() {
           setCurrentOrg(auth.organisation);
         }}
       />
-
-      {/* Footer */}
-      <footer className="border-t border-slate-900 py-6 text-center text-xs text-slate-500">
-        Rekon SaaS Payment & Settlement Reconciliation Engine • Phase 1 Complete
-      </footer>
     </div>
   );
 }
